@@ -54,7 +54,7 @@
 /* Version, author, desc, etc */
 #define DRIVER_AUTHOR "Dennis Rassmann <showp1984@gmail.com>"
 #define DRIVER_DESCRIPTION "Doubletap2wake for almost any device"
-#define DRIVER_VERSION "1.0"
+#define DRIVER_VERSION "1.1"
 #define LOGTAG "[doubletap2wake]: "
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
@@ -63,12 +63,22 @@ MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPLv2");
 
 /* Tuneables */
-#define DT2W_DEBUG         0
-#define DT2W_DEFAULT       0
+#define DT2W_DEBUG         1
+#define DT2W_DEFAULT       2
 
 #define DT2W_PWRKEY_DUR   60
-#define DT2W_FEATHER      50
-#define DT2W_TIME        600
+#define DT2W_FEATHER     200
+#define DT2W_TIME        700
+
+#define DT2W_X_MAX       480
+#define DT2W_Y_LIMIT     854
+
+#define DT2W_Y_B1        250
+#define DT2W_Y_B2        DT2W_Y_LIMIT-250
+
+#define DT2W_X_B1        125
+#define DT2W_X_B2        DT2W_X_MAX-125
+
 
 /* Resources */
 int dt2w_switch = DT2W_DEFAULT;
@@ -77,6 +87,8 @@ static int touch_x = 0, touch_y = 0, touch_nr = 0, x_pre = 0, y_pre = 0;
 static bool touch_x_called = false, touch_y_called = false, touch_cnt = true;
 static bool exec_count = true;
 bool dt2w_scr_suspended = false;
+static int key_code = KEY_POWER;
+int dt2w_sent_play_pause = 0;
 #ifndef WAKE_HOOKS_DEFINED
 #ifndef CONFIG_HAS_EARLYSUSPEND
 static struct notifier_block dt2w_lcd_notif;
@@ -99,6 +111,9 @@ static int __init read_dt2w_cmdline(char *dt2w)
 	if (strcmp(dt2w, "1") == 0) {
 		pr_info("[cmdline_dt2w]: DoubleTap2Wake enabled. | dt2w='%s'\n", dt2w);
 		dt2w_switch = 1;
+	} else if (strcmp(dt2w, "2") == 0) {
+		pr_info("[cmdline_dt2w]: DoubleTap2Wake (MusiqMod) enabled. | dt2w='%s'\n", dt2w);
+		dt2w_switch = 2;
 	} else if (strcmp(dt2w, "0") == 0) {
 		pr_info("[cmdline_dt2w]: DoubleTap2Wake disabled. | dt2w='%s'\n", dt2w);
 		dt2w_switch = 0;
@@ -122,10 +137,10 @@ static void doubletap2wake_reset(void) {
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
-	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
+	input_event(doubletap2wake_pwrdev, EV_KEY, key_code, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(DT2W_PWRKEY_DUR);
-	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
+	input_event(doubletap2wake_pwrdev, EV_KEY, key_code, 0);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(DT2W_PWRKEY_DUR);
 	mutex_unlock(&pwrkeyworklock);
@@ -184,14 +199,47 @@ static void detect_doubletap2wake(int x, int y, bool st)
 		if ((touch_nr > 1)) {
 			pr_info(LOGTAG"ON\n");
 			exec_count = false;
-			doubletap2wake_pwrtrigger();
+			if ((dt2w_switch == 2) /*&& (is_headset_in_use || dt2w_sent_play_pause)*/) {
+				if ((y > DT2W_Y_B1) && (y < DT2W_Y_B2)) {
+					if ((x > DT2W_X_B1) && (x < DT2W_X_B2)) {
+						pr_info(LOGTAG"MusiqMod: play_pause\n");
+						key_code =  KEY_PLAYPAUSE;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					} else if (x < DT2W_X_B1) {
+						pr_info(LOGTAG"MusiqMod: previous song\n");
+						key_code =  KEY_PREVIOUSSONG;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					} else if (x > DT2W_X_B2) {
+						pr_info(LOGTAG"MusiqMod: next song\n");
+						key_code =  KEY_NEXTSONG;
+						dt2w_sent_play_pause = 1;
+						doubletap2wake_pwrtrigger();
+					}
+				} else {
+					doubletap2wake_reset();
+				}
+			} else {
+				pr_info(LOGTAG"on_off\n");
+				key_code =  KEY_POWER;
+				dt2w_sent_play_pause = 0;
+				doubletap2wake_pwrtrigger();
+			}
 			doubletap2wake_reset();
 		}
 	}
 }
 
 static void dt2w_input_callback(struct work_struct *unused) {
-
+/*
+	if (is_earpiece_on) {
+#if DT2W_DEBUG
+		pr_info("DoubleTap2Wake: earpiece on! return!\n");
+#endif
+		return;
+	}
+*/
 	detect_doubletap2wake(touch_x, touch_y, true);
 
 	return;
@@ -328,6 +376,7 @@ static int lcd_notifier_callback(struct notifier_block *this,
 	switch (event) {
 	case LCD_EVENT_ON_END:
 		dt2w_scr_suspended = false;
+		dt2w_sent_play_pause = 0;
 		break;
 	case LCD_EVENT_OFF_END:
 		dt2w_scr_suspended = true;
@@ -371,13 +420,11 @@ static ssize_t dt2w_doubletap2wake_show(struct device *dev,
 static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	if (buf[1] == '\n') {
-		if (buf[0] == '0') {
-			dt2w_switch = 0;
-		} else if (buf[0] == '1') {
-			dt2w_switch = 1;
+	if (buf[0] >= '0' && buf[0] <= '2' && buf[1] == '\n')
+		if (dt2w_switch != buf[0] - '0') {
+			dt2w_switch = buf[0] - '0';
+			dt2w_sent_play_pause = 0;
 		}
-	}
 
 	return count;
 }
@@ -417,6 +464,25 @@ static int __init doubletap2wake_init(void)
 {
 	int rc = 0;
 
+	doubletap2wake_pwrdev = input_allocate_device();
+	if (!doubletap2wake_pwrdev) {
+		pr_err("Can't allocate suspend autotest power button\n");
+		goto err_alloc_dev;
+	}
+
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_POWER);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PLAYPAUSE);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_NEXTSONG);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PREVIOUSSONG);
+	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
+	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
+
+	rc = input_register_device(doubletap2wake_pwrdev);
+	if (rc) {
+		pr_err("%s: input_register_device err=%d\n", __func__, rc);
+		goto err_input_dev;
+	}
+
 	dt2w_input_wq = create_workqueue("dt2wiwq");
 	if (!dt2w_input_wq) {
 		pr_err("%s: Failed to create dt2wiwq workqueue\n", __func__);
@@ -453,6 +519,11 @@ static int __init doubletap2wake_init(void)
 		pr_warn("%s: sysfs_create_file failed for doubletap2wake_version\n", __func__);
 	}
 
+err_input_dev:
+	input_free_device(doubletap2wake_pwrdev);
+err_alloc_dev:
+	pr_info(LOGTAG"%s done\n", __func__);
+
 	return 0;
 }
 
@@ -468,6 +539,8 @@ static void __exit doubletap2wake_exit(void)
 #endif
 	input_unregister_handler(&dt2w_input_handler);
 	destroy_workqueue(dt2w_input_wq);
+	input_unregister_device(doubletap2wake_pwrdev);
+	input_free_device(doubletap2wake_pwrdev);
 	return;
 }
 
