@@ -23,7 +23,7 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/platform_device.h>
 
 #include <linux/hwmsensor.h>
@@ -131,9 +131,9 @@ struct mpu3000_i2c_data {
     atomic_t                fir_en;
     struct data_filter      fir;
 #endif
-    /*early suspend*/
+    /*power suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend    early_drv;
+    struct power_suspend    early_drv;
 #endif
 };
 /*----------------------------------------------------------------------------*/
@@ -1416,7 +1416,7 @@ static int mpu3000_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 #else /*CONFIG_HAS_EARLY_SUSPEND is defined*/
 /*----------------------------------------------------------------------------*/
-static void mpu3000_early_suspend(struct early_suspend *h)
+static void mpu3000_early_suspend(struct power_suspend *h)
 {
     struct mpu3000_i2c_data *obj = container_of(h, struct mpu3000_i2c_data, early_drv);
     int err;
@@ -1454,7 +1454,7 @@ static void mpu3000_early_suspend(struct early_suspend *h)
     MPU3000_power(obj->hw, 0);
 }
 /*----------------------------------------------------------------------------*/
-static void mpu3000_late_resume(struct early_suspend *h)
+static void mpu3000_late_resume(struct power_suspend *h)
 {
     struct mpu3000_i2c_data *obj = container_of(h, struct mpu3000_i2c_data, early_drv);
     int err;
@@ -1636,10 +1636,10 @@ static int mpu3000_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,
+    /*obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,*/
     obj->early_drv.suspend  = mpu3000_early_suspend,
     obj->early_drv.resume   = mpu3000_late_resume,
-    register_early_suspend(&obj->early_drv);
+    register_power_suspend(&obj->early_drv);
 #endif
 
     mpu3050_init_flag = 0;

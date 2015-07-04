@@ -29,7 +29,7 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/platform_device.h>
 #include <linux/atomic.h>
 #include <linux/mutex.h>
@@ -150,9 +150,9 @@ struct bmg_i2c_data {
     atomic_t    fir_en;
     struct data_filter    fir;
 #endif
-    /*early suspend*/
+    /*power suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend early_drv;
+    struct power_suspend early_drv;
 #endif
 };
 
@@ -1691,7 +1691,7 @@ static int bmg_resume(struct i2c_client *client)
     return 0;
 }
 #else
-static void bmg_early_suspend(struct early_suspend *h)
+static void bmg_early_suspend(struct power_suspend *h)
 {
     struct bmg_i2c_data *obj =
         container_of(h, struct bmg_i2c_data, early_drv);
@@ -1712,7 +1712,7 @@ static void bmg_early_suspend(struct early_suspend *h)
     //bmg_power(obj->hw, 0);
 }
 
-static void bmg_late_resume(struct early_suspend *h)
+static void bmg_late_resume(struct power_suspend *h)
 {
     struct bmg_i2c_data *obj =
         container_of(h, struct bmg_i2c_data, early_drv);
@@ -1893,10 +1893,10 @@ static int bmg_i2c_probe(struct i2c_client *client,
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    obj->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
+    /*obj->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,*/
     obj->early_drv.suspend  = bmg_early_suspend,
     obj->early_drv.resume   = bmg_late_resume,
-    register_early_suspend(&obj->early_drv);
+    register_power_suspend(&obj->early_drv);
 #endif
     bmg160_init_flag = 0;
     GYRO_LOG("%s: OK\n", __func__);
@@ -1921,7 +1921,7 @@ static int bmg_i2c_remove(struct i2c_client *client)
     struct bmg_i2c_data *obj = i2c_get_clientdata(client);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&obj->early_drv);
+    unregister_power_suspend(&obj->early_drv);
 #endif
 
     err = bmg_delete_attr(&(bmg160_init_info.platform_diver_addr->driver));

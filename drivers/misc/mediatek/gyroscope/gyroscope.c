@@ -13,13 +13,14 @@
 */
 
 #include "gyroscope.h"
+#include <linux/powersuspend.h>
 
 static struct gyro_context *gyro_context_obj = NULL;
 
 
 static struct gyro_init_info* gyroscope_init_list[MAX_CHOOSE_GYRO_NUM]= {0}; //modified
-static void gyro_early_suspend(struct early_suspend *h);
-static void gyro_late_resume(struct early_suspend *h);
+static void gyro_early_suspend(struct power_suspend *h);
+static void gyro_late_resume(struct power_suspend *h);
 
 static void gyro_work_func(struct work_struct *work)
 {
@@ -723,10 +724,10 @@ static int gyro_probe(struct platform_device *pdev)
     }
 
         atomic_set(&(gyro_context_obj->early_suspend), 0);
-    gyro_context_obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
+    /*gyro_context_obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,*/
     gyro_context_obj->early_drv.suspend  = gyro_early_suspend,
     gyro_context_obj->early_drv.resume   = gyro_late_resume,
-    register_early_suspend(&gyro_context_obj->early_drv);
+    register_power_suspend(&gyro_context_obj->early_drv);
 
     GYRO_LOG("----gyro_probe OK !!\n");
     return 0;
@@ -772,14 +773,14 @@ static int gyro_remove(struct platform_device *pdev)
     return 0;
 }
 
-static void gyro_early_suspend(struct early_suspend *h)
+static void gyro_early_suspend(struct power_suspend *h)
 {
    atomic_set(&(gyro_context_obj->early_suspend), 1);
    GYRO_LOG(" gyro_early_suspend ok------->hwm_obj->early_suspend=%d \n",atomic_read(&(gyro_context_obj->early_suspend)));
    return ;
 }
 /*----------------------------------------------------------------------------*/
-static void gyro_late_resume(struct early_suspend *h)
+static void gyro_late_resume(struct power_suspend *h)
 {
    atomic_set(&(gyro_context_obj->early_suspend), 0);
    GYRO_LOG(" gyro_late_resume ok------->hwm_obj->early_suspend=%d \n",atomic_read(&(gyro_context_obj->early_suspend)));

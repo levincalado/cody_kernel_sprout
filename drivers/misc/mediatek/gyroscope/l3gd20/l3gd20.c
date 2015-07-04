@@ -23,7 +23,7 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/platform_device.h>
 
 #include <cust_gyro.h>
@@ -139,9 +139,9 @@ struct l3gd20_i2c_data {
     atomic_t                fir_en;
     struct data_filter      fir;
 #endif
-    /*early suspend*/
+    /*power suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend    early_drv;
+    struct power_suspend    early_drv;
 #endif
 };
 /*----------------------------------------------------------------------------*/
@@ -1187,7 +1187,7 @@ static int l3gd20_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 #else /*CONFIG_HAS_EARLY_SUSPEND is defined*/
 /*----------------------------------------------------------------------------*/
-static void l3gd20_early_suspend(struct early_suspend *h)
+static void l3gd20_early_suspend(struct power_suspend *h)
 {
     struct l3gd20_i2c_data *obj = container_of(h, struct l3gd20_i2c_data, early_drv);
     int err;
@@ -1220,7 +1220,7 @@ static void l3gd20_early_suspend(struct early_suspend *h)
     L3GD20_power(obj->hw, 0);
 }
 /*----------------------------------------------------------------------------*/
-static void l3gd20_late_resume(struct early_suspend *h)
+static void l3gd20_late_resume(struct power_suspend *h)
 {
     struct l3gd20_i2c_data *obj = container_of(h, struct l3gd20_i2c_data, early_drv);
     int err;
@@ -1394,10 +1394,10 @@ static int l3gd20_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,
+    /*obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,*/
     obj->early_drv.suspend  = l3gd20_early_suspend,
     obj->early_drv.resume   = l3gd20_late_resume,
-    register_early_suspend(&obj->early_drv);
+    register_power_suspend(&obj->early_drv);
 #endif
     l3gd20_init_flag = 0;
     GYRO_LOG("%s: OK\n", __func__);
