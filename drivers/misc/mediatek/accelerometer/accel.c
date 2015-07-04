@@ -13,14 +13,15 @@
 */
 
 #include "accel.h"
+#include <linux/powersuspend.h>
 
 static struct acc_context *acc_context_obj = NULL;
 
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };    /* modified */
 
-static void acc_early_suspend(struct early_suspend *h);
-static void acc_late_resume(struct early_suspend *h);
+static void acc_early_suspend(struct power_suspend *h);
+static void acc_late_resume(struct power_suspend *h);
 struct input_dev *sm_dev =NULL;
 
 static void acc_work_func(struct work_struct *work)
@@ -688,10 +689,10 @@ static int acc_probe(struct platform_device *pdev)
 	}
 
 	atomic_set(&(acc_context_obj->early_suspend), 0);
-	acc_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
+	/*acc_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,*/
 	    acc_context_obj->early_drv.suspend = acc_early_suspend,
 	    acc_context_obj->early_drv.resume = acc_late_resume,
-	    register_early_suspend(&acc_context_obj->early_drv);
+	    register_power_suspend(&acc_context_obj->early_drv);
 
 
 	ACC_LOG("----accel_probe OK !!\n");
@@ -725,7 +726,7 @@ static int acc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void acc_early_suspend(struct early_suspend *h)
+static void acc_early_suspend(struct power_suspend *h)
 {
 	atomic_set(&(acc_context_obj->early_suspend), 1);
 	ACC_LOG(" acc_early_suspend ok------->hwm_obj->early_suspend=%d\n",
@@ -734,7 +735,7 @@ static void acc_early_suspend(struct early_suspend *h)
 }
 
 /*----------------------------------------------------------------------------*/
-static void acc_late_resume(struct early_suspend *h)
+static void acc_late_resume(struct power_suspend *h)
 {
 	atomic_set(&(acc_context_obj->early_suspend), 0);
 	ACC_LOG(" acc_late_resume ok------->hwm_obj->early_suspend=%d\n",
