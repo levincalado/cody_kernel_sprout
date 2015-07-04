@@ -27,6 +27,7 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <asm/uaccess.h>
+#include <linux/powersuspend.h>
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
@@ -165,12 +166,12 @@ static void __exit tpd_device_exit(void);
 static int tpd_probe(struct platform_device *pdev);
 static int tpd_remove(struct platform_device *pdev);
 
-extern void tpd_suspend(struct early_suspend *h);
-extern void tpd_resume(struct early_suspend *h);
+extern void tpd_suspend(struct power_suspend *h);
+extern void tpd_resume(struct power_suspend *h);
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 #include <cust_eint.h>
-void (*nyx_suspend) (struct early_suspend *h);
-void (*nyx_resume) (struct early_suspend *h);
+void (*nyx_suspend) (struct power_suspend *h);
+void (*nyx_resume) (struct power_suspend *h);
 #endif
 
 extern void tpd_button_init(void);
@@ -202,9 +203,10 @@ static struct platform_driver tpd_driver = {
 };
 
 /*20091105, Kelvin, re-locate touch screen driver to earlysuspend*/
+/*20150702, Levin Calado, replace earlysuspend with powersuspend*/
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend MTK_TS_early_suspend_handler = {
-	.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
+static struct power_suspend MTK_TS_early_suspend_handler = {
+	/*.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,*/
 	.suspend = NULL,
 	.resume = NULL,
 };
@@ -301,7 +303,7 @@ static void tpd_create_attributes(struct device *dev, struct tpd_attrs *attrs)
 
 #ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
 
-static void eros_suspend(struct early_suspend *h) {
+static void eros_suspend(struct power_suspend *h) {
 #if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	bool prevent_sleep = false;
 #endif
@@ -328,7 +330,7 @@ static void eros_suspend(struct early_suspend *h) {
 	}
 }
 
-static void eros_resume(struct early_suspend *h) {
+static void eros_resume(struct power_suspend *h) {
 #if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
 	bool prevent_sleep = false;
 #endif
@@ -383,7 +385,7 @@ static int tpd_probe(struct platform_device *pdev)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	MTK_TS_early_suspend_handler.suspend = g_tpd_drv->suspend;
 	MTK_TS_early_suspend_handler.resume = g_tpd_drv->resume;
-	register_early_suspend(&MTK_TS_early_suspend_handler);
+	register_power_suspend(&MTK_TS_early_suspend_handler);
 #endif
 #endif
 
@@ -460,7 +462,7 @@ static int tpd_probe(struct platform_device *pdev)
 		MTK_TS_early_suspend_handler.resume  = eros_resume;
 	}
 #endif
-	register_early_suspend(&MTK_TS_early_suspend_handler);
+	register_power_suspend(&MTK_TS_early_suspend_handler);
 #endif
 #endif
 
@@ -545,7 +547,7 @@ static int tpd_remove(struct platform_device *pdev)
 {
 	input_unregister_device(tpd->dev);
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&MTK_TS_early_suspend_handler);
+	unregister_power_suspend(&MTK_TS_early_suspend_handler);
 #endif
 	return 0;
 }
@@ -576,7 +578,7 @@ static void __exit tpd_device_exit(void)
 	/* input_unregister_device(tpd->dev); */
 	platform_driver_unregister(&tpd_driver);
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&MTK_TS_early_suspend_handler);
+	unregister_power_suspend(&MTK_TS_early_suspend_handler);
 #endif
 }
 
