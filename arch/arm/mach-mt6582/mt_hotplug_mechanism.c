@@ -20,7 +20,7 @@
 #include <linux/init.h>
 #include <linux/cpu.h>
 #include <linux/cpufreq.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h> //seq_printf, single_open
 #include <linux/wakelock.h>
@@ -56,9 +56,9 @@ static int g_enable = 1;
 static int g_enable_cpu_rush_boost = 0;
 static int g_prev_cpu_rush_boost_enable = 0;
 
-static struct early_suspend mt_hotplug_mechanism_early_suspend_handler =
+static struct power_suspend mt_hotplug_mechanism_early_suspend_handler =
 {
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,
+    /*.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,*/
     .suspend = NULL,
     .resume  = NULL,
 };
@@ -101,10 +101,10 @@ extern void hp_set_dynamic_cpu_hotplug_enable(int enable);
 
 
 /*********************************
-* early suspend callback function
+* power suspend callback function
 **********************************/
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void mt_hotplug_mechanism_early_suspend(struct early_suspend *h)
+static void mt_hotplug_mechanism_early_suspend(struct power_suspend *h)
 {
     struct cpufreq_policy *policy;
     policy = cpufreq_cpu_get(0);
@@ -136,7 +136,7 @@ early_suspend_end:
 * late resume callback function
 ********************************/
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void mt_hotplug_mechanism_late_resume(struct early_suspend *h)
+static void mt_hotplug_mechanism_late_resume(struct power_suspend *h)
 {
     struct cpufreq_policy *policy;
     policy = cpufreq_cpu_get(0);
@@ -458,7 +458,7 @@ static int __init mt_hotplug_mechanism_init(void)
 #ifdef CONFIG_HAS_EARLYSUSPEND
     mt_hotplug_mechanism_early_suspend_handler.suspend = mt_hotplug_mechanism_early_suspend;
     mt_hotplug_mechanism_early_suspend_handler.resume = mt_hotplug_mechanism_late_resume;
-    register_early_suspend(&mt_hotplug_mechanism_early_suspend_handler);
+    register_power_suspend(&mt_hotplug_mechanism_early_suspend_handler);
 #endif //#ifdef CONFIG_HAS_EARLYSUSPEND
 
     r = platform_driver_register(&mt_hotplug_mechanism_pdrv);

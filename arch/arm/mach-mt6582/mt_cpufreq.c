@@ -23,7 +23,7 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
@@ -84,9 +84,9 @@ do {                                                                \
 #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend mt_cpufreq_early_suspend_handler =
+static struct power_suspend mt_cpufreq_early_suspend_handler =
 {
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 200,
+    /*.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 200,*/
     .suspend = NULL,
     .resume  = NULL,
 };
@@ -1405,9 +1405,9 @@ static struct cpufreq_driver mt_cpufreq_driver = {
 };
 
 /*********************************
-* early suspend callback function
+* power suspend callback function
 **********************************/
-void mt_cpufreq_early_suspend(struct early_suspend *h)
+void mt_cpufreq_early_suspend(struct power_suspend *h)
 {
     #ifndef MT_DVFS_RANDOM_TEST
 
@@ -1423,7 +1423,7 @@ void mt_cpufreq_early_suspend(struct early_suspend *h)
 /*******************************
 * late resume callback function
 ********************************/
-void mt_cpufreq_late_resume(struct early_suspend *h)
+void mt_cpufreq_late_resume(struct power_suspend *h)
 {
     #ifndef MT_DVFS_RANDOM_TEST
     /* Deep idle could NOT control vproc now. */
@@ -2266,7 +2266,7 @@ static int mt_cpufreq_pdrv_probe(struct platform_device *pdev)
     #ifdef CONFIG_HAS_EARLYSUSPEND
     mt_cpufreq_early_suspend_handler.suspend = mt_cpufreq_early_suspend;
     mt_cpufreq_early_suspend_handler.resume = mt_cpufreq_late_resume;
-    register_early_suspend(&mt_cpufreq_early_suspend_handler);
+    register_power_suspend(&mt_cpufreq_early_suspend_handler);
     #endif
 
     /************************************************

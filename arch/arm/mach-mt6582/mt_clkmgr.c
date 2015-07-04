@@ -36,7 +36,7 @@
 #include <mach/mt_spm_sleep.h>
 #include <mach/mt_freqhopping.h>
 #include <mach/mt_gpufreq.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 
 //#define CLK_LOG_TOP
 //#define CLK_LOG
@@ -4014,17 +4014,17 @@ void mt_clkmgr_debug_init(void)
 }
 
 /***********************************
-*for early suspend
+*for power suspend
 ************************************/
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void clkmgr_early_suspend(struct early_suspend *h)
+static void clkmgr_early_suspend(struct power_suspend *h)
 {
     clk_info("[%s]: Dump Top MUX register, CLK_CFG_0=0x%x, CLK_CFG_1=0x%x, CLK_CFG_2=0x%x, CLK_CFG_3=0x%x\n", \
     __func__, clk_readl(CLK_CFG_0), clk_readl(CLK_CFG_1), clk_readl(CLK_CFG_2), clk_readl(CLK_CFG_3));
     
     return;
 }
-static void clkmgr_late_resume(struct early_suspend *h)
+static void clkmgr_late_resume(struct power_suspend *h)
 {
     clk_info("[%s]: Dump Top MUX register, CLK_CFG_0=0x%x, CLK_CFG_1=0x%x, CLK_CFG_2=0x%x, CLK_CFG_3=0x%x\n", \
     __func__, clk_readl(CLK_CFG_0), clk_readl(CLK_CFG_1), clk_readl(CLK_CFG_2), clk_readl(CLK_CFG_3));
@@ -4032,9 +4032,9 @@ static void clkmgr_late_resume(struct early_suspend *h)
     return;
 }
 
-static struct early_suspend mt_clkmgr_early_suspend_handler =
+static struct power_suspend mt_clkmgr_early_suspend_handler =
 {
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,
+    /*.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,*/
     .suspend = clkmgr_early_suspend,
     .resume  = clkmgr_late_resume,
 };
@@ -4089,7 +4089,7 @@ static int mt_clkmgr_debug_bringup_init(void)
     mt_clkmgr_debug_init();
 
 #ifdef CONFIG_HAS_EARLYSUSPEND    
-    register_early_suspend(&mt_clkmgr_early_suspend_handler);
+    register_power_suspend(&mt_clkmgr_early_suspend_handler);
 #endif
 
     ret = platform_device_register(&CLK_helper_device);
