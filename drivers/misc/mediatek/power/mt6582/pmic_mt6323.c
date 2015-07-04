@@ -55,7 +55,7 @@
 #include <linux/syscalls.h>
 #include <linux/sched.h>
 #include <linux/writeback.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/version.h>
 
 #include <asm/uaccess.h>
@@ -3793,7 +3793,7 @@ static struct platform_driver mt_pmic_driver = {
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void pmic_early_suspend(struct early_suspend *h)
+static void pmic_early_suspend(struct power_suspend *h)
 {
 	xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "******** MT6323 pmic driver early suspend!! ********\n" );
 	upmu_set_rg_vref18_enb(0);
@@ -3808,7 +3808,7 @@ static void pmic_early_suspend(struct early_suspend *h)
 
 }
 
-static void pmic_early_resume(struct early_suspend *h)
+static void pmic_early_resume(struct power_suspend *h)
 {
 	xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "******** MT6323 pmic driver early resume!! ********\n" );
 	upmu_set_rg_vref18_enb(0);
@@ -3823,8 +3823,8 @@ static void pmic_early_resume(struct early_suspend *h)
 
 }
 
-static struct early_suspend pmic_early_suspend_desc = {
-	.level		= EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1,
+static struct power_suspend pmic_early_suspend_desc = {
+	/*.level		= EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1,*/
 	.suspend	= pmic_early_suspend,
 	.resume		= pmic_early_resume,
 };
@@ -3867,7 +3867,7 @@ static int __init pmic_mt6323_init(void)
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&pmic_early_suspend_desc);
+	register_power_suspend(&pmic_early_suspend_desc);
 #endif
 
     xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "****[pmic_mt6323_init] Initialization : DONE !!\n");
