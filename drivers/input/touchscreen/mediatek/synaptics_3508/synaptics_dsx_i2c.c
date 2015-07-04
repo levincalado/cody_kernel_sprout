@@ -37,6 +37,7 @@
 #include <mach/mt_typedefs.h>
 #include <mach/mt_boot.h>
 #include "cust_gpio_usage.h"
+#include <linux/powersuspend.h>
 #include "tpd.h"
 
 #include "synaptics_dsx_i2c.h"
@@ -177,9 +178,9 @@ static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
 static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count);
 
-static void synaptics_rmi4_early_suspend(struct early_suspend *h);
+static void synaptics_rmi4_early_suspend(struct power_suspend *h);
 
-static void synaptics_rmi4_late_resume(struct early_suspend *h);
+static void synaptics_rmi4_late_resume(struct power_suspend *h);
 #endif
 
 static int synaptics_rmi4_suspend(struct device *dev);
@@ -2691,6 +2692,9 @@ EXPORT_SYMBOL(synaptics_rmi4_new_function);
  * the registration of the early_suspend and late_resume functions,
  * and creates a work queue for detection of other expansion Function
  * modules.
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
 static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 		const struct i2c_device_id *dev_id)
@@ -2781,10 +2785,10 @@ printk("[s3508]synaptics_rmi4_probe\n");
 	}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	/*rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;*/
 	rmi4_data->early_suspend.suspend = synaptics_rmi4_early_suspend;
 	rmi4_data->early_suspend.resume = synaptics_rmi4_late_resume;
-	register_early_suspend(&rmi4_data->early_suspend);
+	register_power_suspend(&rmi4_data->early_suspend);
 #endif
 
 	thread = kthread_run(touch_event_handler, rmi4_data, "synaptics-tpd");
@@ -2845,7 +2849,7 @@ err_sysfs:
 
 err_enable_irq:
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&rmi4_data->early_suspend);
+	unregister_power_suspend(&rmi4_data->early_suspend);
 #endif
 
 	synaptics_rmi4_empty_fn_list(rmi4_data);
@@ -2867,6 +2871,9 @@ err_set_input_dev:
  * This funtion terminates the work queue, stops sensor data acquisition,
  * frees the interrupt, unregisters the driver from the input subsystem,
  * turns off the power to the sensor, and frees other allocated resources.
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
 static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 {
@@ -2885,7 +2892,7 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 	synaptics_rmi4_irq_enable(rmi4_data, false);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	unregister_early_suspend(&rmi4_data->early_suspend);
+	unregister_power_suspend(&rmi4_data->early_suspend);
 #endif
 
 	synaptics_rmi4_empty_fn_list(rmi4_data);
@@ -2904,6 +2911,9 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
  * Called by synaptics_rmi4_early_suspend() and synaptics_rmi4_suspend().
  *
  * This function stops finger data acquisition and puts the sensor to sleep.
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
 static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data)
 {
@@ -2996,8 +3006,11 @@ static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data)
  *
  * This function calls synaptics_rmi4_sensor_sleep() to stop finger
  * data acquisition and put the sensor to sleep.
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
-static void synaptics_rmi4_early_suspend(struct early_suspend *h)
+static void synaptics_rmi4_early_suspend(struct power_suspend *h)
 {
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler;
 	struct synaptics_rmi4_data *rmi4_data =
@@ -3038,8 +3051,11 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
  *
  * This function goes through the sensor wake process if the system wakes
  * up from early suspend (without going into suspend).
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
-static void synaptics_rmi4_late_resume(struct early_suspend *h)
+static void synaptics_rmi4_late_resume(struct power_suspend *h)
 {
 	int retval;
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler;
@@ -3087,6 +3103,9 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
  * This function stops finger data acquisition and puts the sensor to
  * sleep (if not already done so during the early suspend phase),
  * disables the interrupt, and turns off the power to the sensor.
+ *
+ * 20150704 - replace early_suspend with power_suspend PM driver
+ * Author: Levin Calado <levincalado@gmail.com>
  */
 static int synaptics_rmi4_suspend(struct device *dev)
 {
