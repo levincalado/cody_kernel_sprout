@@ -16,6 +16,9 @@
 /*
 ** $Log: platform.c $
  *
+ * 07 04 2015 levincalado
+ * replace early_suspend with power_suspend PM driver
+ *
  * 11 14 2011 cm.chang
  * NULL
  * Fix compiling warning
@@ -105,6 +108,7 @@
 #include <linux/types.h>
 #include <linux/module.h>
 #include <linux/fs.h>
+#include <linux/powersuspend.h>
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 12)
     #include <linux/uaccess.h>
@@ -411,7 +415,7 @@ void wlanUnregisterNotifier(void)
 /*----------------------------------------------------------------------------*/
 
 int glRegisterEarlySuspend(
-    struct early_suspend        *prDesc,
+    struct power_suspend        *prDesc,
     early_suspend_callback      wlanSuspend,
     late_resume_callback        wlanResume)
 {
@@ -431,7 +435,7 @@ int glRegisterEarlySuspend(
         ret = -1;
     }
 
-    register_early_suspend(prDesc);
+    register_power_suspend(prDesc);
     return ret;
 }
 
@@ -445,7 +449,7 @@ int glRegisterEarlySuspend(
 */
 /*----------------------------------------------------------------------------*/
 
-int glUnregisterEarlySuspend(struct early_suspend *prDesc)
+int glUnregisterEarlySuspend(struct power_suspend *prDesc)
 {
     int ret = 0;
 
@@ -459,7 +463,7 @@ int glUnregisterEarlySuspend(struct early_suspend *prDesc)
 		return 0;
 	}
 
-    unregister_early_suspend(prDesc);
+    unregister_power_suspend(prDesc);
 
     prDesc->suspend = NULL;
     prDesc->resume = NULL;
