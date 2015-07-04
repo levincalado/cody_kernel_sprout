@@ -37,7 +37,7 @@
 #include <linux/android_pmem.h>
 #include <mach/dma.h>
 #include <linux/delay.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include "mach/sync_write.h"
 #include "mach/mt_reg_base.h"
 #include "mach/mt_clkmgr.h"
@@ -1367,7 +1367,7 @@ static int vcodec_mmap(struct file* file, struct vm_area_struct* vma)
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void vcodec_early_suspend(struct early_suspend *h)
+static void vcodec_early_suspend(struct power_suspend *h)
 {
     mutex_lock(&PWRLock);
     MFV_LOGE("vcodec_early_suspend, tid = %d, PWR_USER = %u\n", current->pid, gu4PWRCounter);
@@ -1385,7 +1385,7 @@ static void vcodec_early_suspend(struct early_suspend *h)
     MFV_LOGD("vcodec_early_suspend - tid = %d\n", current->pid);
 }
 
-static void vcodec_late_resume(struct early_suspend *h)
+static void vcodec_late_resume(struct power_suspend *h)
 {
     mutex_lock(&PWRLock);
     MFV_LOGE("vcodec_late_resume, tid = %d, PWR_USER = %u\n", current->pid, gu4PWRCounter);
@@ -1403,9 +1403,9 @@ static void vcodec_late_resume(struct early_suspend *h)
     MFV_LOGD("vcodec_late_resume - tid = %d\n", current->pid);
 }
 
-static struct early_suspend vcodec_early_suspend_handler =
+static struct power_suspend vcodec_early_suspend_handler =
 {
-    .level = (EARLY_SUSPEND_LEVEL_DISABLE_FB - 1),
+    /*.level = (EARLY_SUSPEND_LEVEL_DISABLE_FB - 1),*/
     .suspend = vcodec_early_suspend,
     .resume = vcodec_late_resume,
 };
@@ -1618,7 +1618,7 @@ static int __init vcodec_driver_init(void)
     MFV_LOGD("[VCODEC_DEBUG] vcodec_driver_init Done\n");
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    register_early_suspend(&vcodec_early_suspend_handler);
+    register_power_suspend(&vcodec_early_suspend_handler);
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -1683,7 +1683,7 @@ static void __exit vcodec_driver_exit(void)
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&vcodec_early_suspend_handler);
+    unregister_power_suspend(&vcodec_early_suspend_handler);
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
