@@ -23,7 +23,7 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
 
@@ -170,9 +170,9 @@ struct TMD2771_priv {
     ulong       enable;         /*enable mask*/
     ulong       pending_intr;   /*pending interrupt*/
 
-    /*early suspend*/
+    /*power suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend    early_drv;
+    struct power_suspend    early_drv;
 #endif
 };
 /*----------------------------------------------------------------------------*/
@@ -1564,8 +1564,11 @@ static int TMD2771_i2c_resume(struct i2c_client *client)
     return 0;
 }
 /*----------------------------------------------------------------------------*/
-static void TMD2771_early_suspend(struct early_suspend *h)
+static void TMD2771_early_suspend(struct power_suspend *h)
 {   /*early_suspend is only applied for ALS*/
+    /*2015, July 04*/
+    /*Author: Levin Calado <levincalado@gmail.com> */
+    /*replace early_suspend with power_suspend */
     struct TMD2771_priv *obj = container_of(h, struct TMD2771_priv, early_drv);
     int err;
     APS_FUN();
@@ -1588,8 +1591,11 @@ static void TMD2771_early_suspend(struct early_suspend *h)
     #endif
 }
 /*----------------------------------------------------------------------------*/
-static void TMD2771_late_resume(struct early_suspend *h)
+static void TMD2771_late_resume(struct power_suspend *h)
 {   /*early_suspend is only applied for ALS*/
+    /*2015, July 04*/
+    /*Author: Levin Calado <levincalado@gmail.com> */
+    /*replace early_suspend with power_suspend */
     struct TMD2771_priv *obj = container_of(h, struct TMD2771_priv, early_drv);
     int err;
     APS_FUN();
@@ -2039,10 +2045,10 @@ static int TMD2771_i2c_probe(struct i2c_client *client, const struct i2c_device_
     }
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    obj->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
+    /*obj->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,*/
     obj->early_drv.suspend  = TMD2771_early_suspend,
     obj->early_drv.resume   = TMD2771_late_resume,
-    register_early_suspend(&obj->early_drv);
+    register_power_suspend(&obj->early_drv);
 #endif
     TMD2771_init_flag =0;
     APS_LOG("%s: OK\n", __func__);
