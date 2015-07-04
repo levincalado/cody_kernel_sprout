@@ -18,7 +18,7 @@
 #include <linux/module.h>
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/mutex.h>
 #include <linux/notifier.h>
 #include <linux/reboot.h>
@@ -28,7 +28,7 @@
 #define DYN_FSYNC_VERSION_MINOR 5
 
 /*
- * fsync_mutex protects dyn_fsync_active during early suspend / late resume
+ * fsync_mutex protects dyn_fsync_active during power suspend / late resume
  * transitions
  */
 static DEFINE_MUTEX(fsync_mutex);
@@ -111,7 +111,7 @@ static void dyn_fsync_force_flush(void)
 	sync_filesystems(1);
 }
 
-static void dyn_fsync_suspend(struct early_suspend *p)
+static void dyn_fsync_suspend(struct power_suspend *p)
 {
 	mutex_lock(&fsync_mutex);
 	if (dyn_fsync_active) {
@@ -121,14 +121,14 @@ static void dyn_fsync_suspend(struct early_suspend *p)
 	mutex_unlock(&fsync_mutex);
 }
 
-static void dyn_fsync_resume(struct early_suspend *p)
+static void dyn_fsync_resume(struct power_suspend *p)
 {
 	mutex_lock(&fsync_mutex);
 	early_suspend_active = false;
 	mutex_unlock(&fsync_mutex);
 }
 
-static struct early_suspend dyn_fsync_early_suspend_handler = 
+static struct power_suspend dyn_fsync_early_suspend_handler = 
 	{
 		.suspend = dyn_fsync_suspend,
 		.resume = dyn_fsync_resume,
@@ -168,7 +168,7 @@ static int dyn_fsync_init(void)
 {
 	int sysfs_result;
 
-	register_early_suspend(&dyn_fsync_early_suspend_handler);
+	register_power_suspend(&dyn_fsync_early_suspend_handler);
 	register_reboot_notifier(&dyn_fsync_notifier);
 	atomic_notifier_chain_register(&panic_notifier_list,
 		&dyn_fsync_panic_block);
@@ -191,7 +191,7 @@ static int dyn_fsync_init(void)
 
 static void dyn_fsync_exit(void)
 {
-	unregister_early_suspend(&dyn_fsync_early_suspend_handler);
+	unregister_power_suspend(&dyn_fsync_early_suspend_handler);
 	unregister_reboot_notifier(&dyn_fsync_notifier);
 	atomic_notifier_chain_unregister(&panic_notifier_list,
 		&dyn_fsync_panic_block);
@@ -204,6 +204,6 @@ module_init(dyn_fsync_init);
 module_exit(dyn_fsync_exit);
 
 MODULE_AUTHOR("Paul Reioux <reioux@gmail.com>");
-MODULE_DESCRIPTION("dynamic fsync - automatic fs sync optimizaition using"
-		"early_suspend driver!");
+MODULE_DESCRIPTION("dynamic fsync - automatic fs sync optimization using"
+		"power_suspend driver!");
 MODULE_LICENSE("GPL v2");
