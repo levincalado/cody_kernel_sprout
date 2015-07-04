@@ -21,7 +21,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/kthread.h>
 #include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
@@ -182,8 +182,8 @@ extern void    MTK_HDMI_Set_Security_Output(int enable);
 #endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_late_resume(struct early_suspend *h);
-static void mtkfb_early_suspend(struct early_suspend *h);
+static void mtkfb_late_resume(struct power_suspend *h);
+static void mtkfb_early_suspend(struct power_suspend *h);
 #endif
 // ---------------------------------------------------------------------------
 //  Timer Routines
@@ -3019,7 +3019,7 @@ void mtkfb_clear_lcm(void)
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_early_suspend(struct early_suspend *h)
+static void mtkfb_early_suspend(struct power_suspend *h)
 {
     int i=0;
     MSG_FUNC_ENTER();
@@ -3106,7 +3106,7 @@ static int mtkfb_resume(struct device *pdev)
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static void mtkfb_late_resume(struct early_suspend *h)
+static void mtkfb_late_resume(struct power_suspend *h)
 {
     MSG_FUNC_ENTER();
 
@@ -3260,9 +3260,9 @@ static struct platform_driver mtkfb_driver =
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend mtkfb_early_suspend_handler =
+static struct power_suspend mtkfb_early_suspend_handler =
 {
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
+    /*.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,*/
     .suspend = mtkfb_early_suspend,
     .resume = mtkfb_late_resume,
 };
@@ -3298,7 +3298,7 @@ int __init mtkfb_init(void)
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-       register_early_suspend(&mtkfb_early_suspend_handler);
+       register_power_suspend(&mtkfb_early_suspend_handler);
 #endif
 
     DBG_Init();
@@ -3318,7 +3318,7 @@ static void __exit mtkfb_cleanup(void)
     platform_driver_unregister(&mtkfb_driver);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&mtkfb_early_suspend_handler);
+    unregister_power_suspend(&mtkfb_early_suspend_handler);
 #endif
 
     kthread_stop(screen_update_task);
