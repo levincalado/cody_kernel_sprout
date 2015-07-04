@@ -19,7 +19,7 @@
 #include "internal.h"
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #endif
 
 #ifdef CONFIG_COMPACTION
@@ -1241,7 +1241,7 @@ void compaction_unregister_node(struct node *node)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 extern void drop_pagecache(void);
 //extern void kick_lmk_from_compaction(gfp_t);
-static void kick_compaction_early_suspend(struct early_suspend *h)
+static void kick_compaction_early_suspend(struct power_suspend *h)
 {
 	struct zone *z = &NODE_DATA(0)->node_zones[ZONE_NORMAL];
 	int status;
@@ -1272,13 +1272,13 @@ extern void shrink_mtkpasr_late_resume(void);
 #define shrink_mtkpasr_late_resume(void)	do {} while (0)
 #endif
 
-static void kick_compaction_late_resume(struct early_suspend *h)
+static void kick_compaction_late_resume(struct power_suspend *h)
 {
 	shrink_mtkpasr_late_resume();
 }
 
-static struct early_suspend kick_compaction_early_suspend_desc = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1,
+static struct power_suspend kick_compaction_early_suspend_desc = {
+	/*.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1,*/
 	.suspend = kick_compaction_early_suspend,
 	.resume = kick_compaction_late_resume,
 };
@@ -1286,13 +1286,13 @@ static struct early_suspend kick_compaction_early_suspend_desc = {
 static int __init compaction_init(void)
 {
 	printk("@@@@@@ [%s] Register early suspend callback @@@@@@\n",__FUNCTION__);
-	register_early_suspend(&kick_compaction_early_suspend_desc);
+	register_power_suspend(&kick_compaction_early_suspend_desc);
 	return 0;
 }
 static void __exit compaction_exit(void)
 {
 	printk("@@@@@@ [%s] Unregister early suspend callback @@@@@@\n",__FUNCTION__);
-	unregister_early_suspend(&kick_compaction_early_suspend_desc);
+	unregister_power_suspend(&kick_compaction_early_suspend_desc);
 }
 
 module_init(compaction_init);
