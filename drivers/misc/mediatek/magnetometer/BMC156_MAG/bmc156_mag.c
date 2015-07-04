@@ -35,7 +35,7 @@
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/time.h>
 #include <linux/hrtimer.h>
 #include <linux/module.h>
@@ -2039,7 +2039,7 @@ struct bmm050_i2c_data {
     s16 result_test;
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend    early_drv;
+    struct power_suspend    early_drv;
 #endif
 };
 /*----------------------------------------------------------------------------*/
@@ -3973,7 +3973,7 @@ static int bmm050_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 #else /*CONFIG_HAS_EARLY_SUSPEND is defined*/
 /*----------------------------------------------------------------------------*/
-static void bmm050_early_suspend(struct early_suspend *h)
+static void bmm050_early_suspend(struct power_suspend *h)
 {
     struct bmm050_i2c_data *obj = container_of(h, struct bmm050_i2c_data, early_drv);
 
@@ -4045,7 +4045,7 @@ static void bmm050_early_suspend(struct early_suspend *h)
     bmm050_power(obj->hw, 0);
 }
 /*----------------------------------------------------------------------------*/
-static void bmm050_late_resume(struct early_suspend *h)
+static void bmm050_late_resume(struct power_suspend *h)
 {
     struct bmm050_i2c_data *obj = container_of(h, struct bmm050_i2c_data, early_drv);
 
@@ -4516,10 +4516,10 @@ if(err)
 
 
 #if CONFIG_HAS_EARLYSUSPEND
-    data->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
+    /*data->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,*/
     data->early_drv.suspend  = bmm050_early_suspend,
     data->early_drv.resume   = bmm050_late_resume,
-    register_early_suspend(&data->early_drv);
+    register_power_suspend(&data->early_drv);
 #endif
     bmm050_init_flag = 0;
     MSE_LOG("%s: OK\n", __func__);
@@ -4546,7 +4546,7 @@ static int bmm050_i2c_remove(struct i2c_client *client)
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&obj->early_drv);
+    unregister_power_suspend(&obj->early_drv);
 #endif
     bmm050api_set_functional_state(BMM050_SUSPEND_MODE);
     this_client = NULL;

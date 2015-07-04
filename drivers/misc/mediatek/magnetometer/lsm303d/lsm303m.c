@@ -26,7 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
 #include <linux/sensors_io.h>
@@ -166,9 +166,9 @@ struct lsm303m_i2c_data {
     atomic_t                fir_en;
     struct data_filter      fir;
 #endif
-    /*early suspend*/
+    /*power suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend    early_drv;
+    struct power_suspend    early_drv;
 #endif
 };
 /*----------------------------------------------------------------------------*/
@@ -1667,7 +1667,7 @@ static int lsm303m_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 //#else /*CONFIG_HAS_EARLY_SUSPEND is defined*/
 /*----------------------------------------------------------------------------*/
-static void lsm303m_early_suspend(struct early_suspend *h)
+static void lsm303m_early_suspend(struct power_suspend *h)
 {
     struct lsm303m_i2c_data *obj = container_of(h, struct lsm303m_i2c_data, early_drv);
 
@@ -1692,7 +1692,7 @@ static void lsm303m_early_suspend(struct early_suspend *h)
     lsm303m_power(obj->hw, 0);
 }
 /*----------------------------------------------------------------------------*/
-static void lsm303m_late_resume(struct early_suspend *h)
+static void lsm303m_late_resume(struct power_suspend *h)
 {
     struct lsm303m_i2c_data *obj = container_of(h, struct lsm303m_i2c_data, early_drv);
 
@@ -1974,10 +1974,10 @@ static int lsm303m_i2c_probe(struct i2c_client *client, const struct i2c_device_
         }
 
 #if CONFIG_HAS_EARLYSUSPEND
-        data->early_drv.level     = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
+        /*data->early_drv.level     = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,*/
         data->early_drv.suspend  = lsm303m_early_suspend,
         data->early_drv.resume     = lsm303m_late_resume,
-        register_early_suspend(&data->early_drv);
+        register_power_suspend(&data->early_drv);
 #endif
         lsm303m_init_flag = 0;
         MSE_LOG("%s: OK\n", __func__);
