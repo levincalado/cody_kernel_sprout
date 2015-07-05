@@ -67,3 +67,6 @@ KBUILD_AFLAGS	:=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=neon)
 # Module project related part
 obj-y += $(ARCH_MTK_PROJECT)/
 
+# USB Force Fast Charging
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
+
