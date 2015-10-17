@@ -242,7 +242,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else echo sh; fi ; fi)
 
 HOSTCC       = ccache gcc
-HOSTCXX      = g++
+HOSTCXX      = ccache g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
 
@@ -376,7 +376,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
-		   -Werror=format -Werror=int-to-pointer-cast -Werror=pointer-to-int-cast
+		   -Werror=format -Werror=int-to-pointer-cast -Werror=pointer-to-int-cast \
+		   --param l1-cache-size=16 --param l1-cache-line-size=32 --param l2-cache-size=1024 \
 		   -std=gnu89
 
 KBUILD_AFLAGS_KERNEL :=
