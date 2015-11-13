@@ -610,10 +610,9 @@ static int cm36283_get_als_value(struct cm36283_priv *obj, u16 als)
 int cm36283_pocket_detection_check(void)
 {
 	int ps_val;
-	int als_val;
 
 	struct cm36283_priv *obj = cm36283_obj;
-	
+
 	if(obj == NULL)
 	{
 		APS_DBG("[CM36283] cm36283_obj is NULL!");
@@ -623,21 +622,11 @@ int cm36283_pocket_detection_check(void)
 	{
 		cm36283_enable_ps(obj->client, 1);
 
-		// @agaphetos
-		// to do: msleep(1) will be replaced 
-
-		// @thewisenerd
-		// buffer pocket_mod value
-		// sensor_check will otherwise be called every time a touch is made when screen off
-		// simply add a cputime_t;
-		// if ktime_to_ms - cputime_t < 2*sec { do not prox_check }
-		// else { prox_check }
 		msleep(50);
 
 		ps_val = cm36283_get_ps_value(obj, obj->ps);
-		als_val = cm36283_get_als_value(obj, obj->ps);
 
-		APS_DBG("[CM36283] %s als_val = %d, ps_val = %d\n", __func__, als_val, ps_val);
+		APS_DBG("[CM36283] %s ps_val = %d\n", __func__, ps_val);
 
 		cm36283_enable_ps(obj->client, 0);
 
